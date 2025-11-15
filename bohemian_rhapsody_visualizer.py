@@ -375,7 +375,12 @@ class BohemianRhapsodyVisualizer:
         # Try to load audio file (MP3/WAV first, then MIDI)
         audio_loaded = False
         import os
-        audio_files = ["bohemian_rhapsody.mp3", "bohemian_rhapsody.wav"]
+        audio_files = [
+            "bohemian_rhapsody.mp3", 
+            "bohemian_rhapsody.wav",
+            "Queen - Bohemian Rhapsody.mp3",
+            "Queen - Bohemian Rhapsody.wav"
+        ]
         
         # Check for audio files
         for audio_file in audio_files:

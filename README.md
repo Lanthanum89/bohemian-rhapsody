@@ -2,6 +2,8 @@
 
 A MIDI-driven music visualiser inspired by Queen's "Bohemian Rhapsody", featuring geometric particle bursts, sparkle effects for dramatic moments, and a completely pointless but fun ML model that predicts whether the next note will be high or low!
 
+> **Note**: This repository contains only the visualizer code. You must provide your own MIDI and audio files. The code itself is open source, but please respect copyright laws when obtaining music files.
+
 ## Features
 
 ✨ **Reactive Visualisation**
@@ -146,7 +148,13 @@ Because we can! The model learns patterns in the melody and tries to predict pit
 
 ## License
 
-Free to use, modify, and rock out with! 🎵
+MIT License - Free to use, modify, and rock out with! 🎵
+
+**Important Copyright Notice**: 
+- The visualizer code is open source under MIT License
+- "Bohemian Rhapsody" is copyrighted by Queen/EMI
+- Users must obtain their own legal copies of MIDI and audio files
+- Do not distribute copyrighted music files with this code
 
 ---
 
