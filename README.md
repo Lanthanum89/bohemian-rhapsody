@@ -168,11 +168,13 @@ Because we can! The model learns patterns in the melody and tries to predict pit
 
 ## Requirements
 
-- Python 3.7+
-- pygame 2.5.2
-- mido 1.3.2
-- numpy 1.24.3
-- scikit-learn 1.3.2
+- Python 3.9+
+- pygame 2.5+
+- mido 1.3+
+- numpy 1.24+
+- scikit-learn 1.3+
+
+Minimum versions rather than exact pins, so current wheels install on newer Python releases. Tested with pygame 2.6.1, mido 1.3.3, numpy 2.5.3 and scikit-learn 1.9.1 on Python 3.13.
 
 ## License
 
