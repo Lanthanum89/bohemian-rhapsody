@@ -1,6 +1,8 @@
 # 👑 Bohemian Rhapsody Music Visualiser
 
-A MIDI-driven music visualiser inspired by Queen's "Bohemian Rhapsody", featuring geometric particle bursts, sparkle effects for dramatic moments, and a completely pointless but fun ML model that predicts whether the next note will be high or low!
+A MIDI-driven music visualiser inspired by Queen's "Bohemian Rhapsody", featuring glowing geometric particle bursts, a rotating chroma wheel, a live piano roll, drum-driven pulses, sparkle effects for dramatic moments, and a completely pointless but fun ML model that predicts whether the next note will be high or low (and keeps score)!
+
+![Visualiser during the opera section](docs/screenshot.png)
 
 > **Note**: This repository contains only the visualizer code. You must provide your own MIDI and audio files. The code itself is open source, but please respect copyright laws when obtaining music files.
 
@@ -8,20 +10,33 @@ A MIDI-driven music visualiser inspired by Queen's "Bohemian Rhapsody", featurin
 
 ✨ **Reactive Visualisation**
 
-- Green and purple geometric bursts (circles, squares, triangles)
-- Particle intensity scales with note velocity
-- Note pitch determines vertical position
+- Glowing geometric bursts (circles, squares, triangles) with motion trails
+- Colour follows pitch on a gradient: purple (low) → teal → green → gold (very high)
+- Particle count, size and speed scale with note velocity; pitch sets vertical position
+- Loud notes send out shockwave rings
 
-✨ **Special Effects**
+✨ **Musical Read-outs**
 
-- Sparkle explosions at high-intensity moments (simulating key changes)
-- Smooth particle physics with gravity and rotation
+- **Chroma wheel**: 12 petals, one per pitch class, growing with what's being played. It spins faster as the song gets busier
+- **Piano roll**: an 88-key keyboard lights up every note currently sounding
+- **Mood background**: shifts from deep indigo to magenta as overall intensity rises
+- **Progress bar** with gold markers at tempo changes, plus live BPM
+
+✨ **Drums Drive the Stage**
+
+- Kick drum pulses the centre glow, the wheel and the starfield
+- Snare fires a full-screen shockwave
+- Cymbals scatter star dust
+
+✨ **Dramatic Moments**
+
+- Loud notes during high-intensity passages trigger sparkle explosions, a screen flash and camera shake (at most every 15 seconds)
 
 ✨ **ML Prediction** (The Fun Part!)
 
-- Random Forest classifier trained on the MIDI sequence
-- Predicts if the next note will be HIGH or LOW
-- Displays prediction confidence in real-time
+- Random Forest classifier trained on the melodic notes
+- Predicts if the next note will be HIGH or LOW, with a confidence gauge
+- Scores itself live: a strip of green/red ticks for recent hits and misses, plus a running hit rate
 - Completely unnecessary but delightful!
 
 ## Installation
@@ -65,6 +80,9 @@ python bohemian_rhapsody_visualizer.py path/to/your/midi/file.mid
 ## Controls
 
 - **SPACE**: Pause/Resume
+- **F**: Toggle fullscreen
+- **H**: Hide/show the HUD
+- **T**: Toggle motion trails
 - **ESC**: Exit
 
 ## How It Works
@@ -73,58 +91,67 @@ python bohemian_rhapsody_visualizer.py path/to/your/midi/file.mid
 
 Uses `mido` library to parse MIDI files and extract:
 
-- Note timing (converted to seconds)
-- Note pitch (0-127)
-- Note velocity (intensity)
-- Tempo changes
+- Note start and end times in seconds, honouring every tempo change in order
+- Note pitch (0-127) and velocity (intensity)
+- Channel (channel 10 is treated as drums, not pitches)
+- Tempo changes, shown on the progress bar
 
 ### Visualisation
 
-- **Green particles** = Higher notes (≥ middle C)
-- **Purple particles** = Lower notes (< middle C)
-- Particle count and size scale with velocity
-- Three geometric shapes: circles, squares, triangles
-- Physics simulation with gravity and rotation
+Rendering is layered, back to front:
+
+1. Mood gradient (pre-rendered at 16 intensity levels) and kick-drum glow
+2. Parallax starfield
+3. Trail layer: particle cores, faded each frame rather than cleared
+4. Glow layer: cached radial glow sprites, shockwaves and the chroma wheel, blended additively
+5. Piano roll and HUD
+
+Glow sprites are generated once with numpy and reused, and trail fading uses surface blits (SDL's fast path) rather than blended fills, which keeps a busy frame well inside the 60 FPS budget.
 
 ### Sparkle Effects
 
 Triggered when:
 
-- Note velocity exceeds 80% threshold
-- At least 5 seconds since last sparkle
-- Creates white/gold/pink particle explosions
+- A melodic note's velocity exceeds 80%
+- Overall intensity (velocity-weighted notes per second) is in roughly the top 10% for the song
+- At least 15 seconds since the last one
+- Creates white/gold/pink explosions, a screen flash and a short camera shake
 
 ### ML Note Prediction
 
-1. **Training**: Analyzes entire MIDI sequence
+1. **Training**: Analyses the melodic notes (drums excluded)
 2. **Features**: Last 5 notes + their velocities (10 features)
-3. **Label**: Next note is HIGH (above median) or LOW (below median)
+3. **Label**: Next note is HIGH (at or above median) or LOW (below median)
 4. **Model**: Random Forest with 50 trees
-5. **Prediction**: Updates every 3 notes during playback
+5. **Evaluation**: Trained on the first 80% of the song, tested on the last 20% (unshuffled, so overlapping note windows can't leak into the test set)
+6. **Prediction**: Updates on every new melodic note, and is checked against the note that actually arrives
 
-The ML model typically achieves 60-70% accuracy, which is hilariously better than random chance for something this silly!
+Expect around 65% held-out accuracy. The live hit rate during playback runs higher (75-80%) because most of the song was in the training data, so treat it as entertainment rather than evidence.
 
 ## Code Structure
 
 ```
 bohemian_rhapsody_visualizer.py
+├── GlowCache           # Pre-rendered additive glow sprites
 ├── NotePredictor       # ML model for note prediction
-├── Particle            # Individual geometric particle
+├── Particle            # Glowing geometric particle
 ├── Sparkle             # Dramatic moment sparkle effect
+├── Shockwave           # Expanding ring for loud notes and snares
+├── Star                # Background starfield
 └── BohemianRhapsodyVisualizer  # Main visualiser class
-    ├── MIDI parsing
-    ├── Particle management
-    ├── Effect triggering
-    └── Rendering loop
+    ├── _parse_midi     # Tempo-aware note timing and durations
+    ├── update          # Note triggering, drums, ML scoring, decay
+    ├── draw            # Layered rendering
+    └── run             # Event loop and audio
 ```
 
 ## Technical Details
 
 - **Frame rate**: 60 FPS
-- **Resolution**: 1200x800
-- **Particle lifetime**: ~0.7 seconds
+- **Resolution**: 1280x800, scaled to fit when fullscreen
+- **Particle lifetime**: ~0.7 seconds (sparkles ~1.7 seconds), capped at 2,500 live particles
 - **ML sequence length**: 5 notes
-- **Physics**: Simple gravity (200 px/s²)
+- **Physics**: Simple gravity (200 px/s²) with light drag
 
 ## Why the ML Model?
 
@@ -132,11 +159,12 @@ Because we can! The model learns patterns in the melody and tries to predict pit
 
 ## Customisation Ideas
 
-- Adjust colours in `self.GREEN` and `self.PURPLE`
-- Modify `key_change_threshold` for more/fewer sparkles
+- Change the pitch gradient in `pitch_colour()` or the wheel colours in `pitch_class_colour()`
+- Modify `key_change_threshold` and `dramatic_energy` for more/fewer sparkles
+- Adjust `trail_fade` for longer or shorter trails
 - Change ML `sequence_length` for different prediction windows
-- Add more particle shapes
-- Implement beat detection for rhythm-based effects
+- Map other drum notes in `handle_drum()`
+- Label the song's sections on the progress bar
 
 ## Requirements
 
