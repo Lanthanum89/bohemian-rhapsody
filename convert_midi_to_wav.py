@@ -2,13 +2,18 @@
 """
 Convert MIDI file to WAV audio using FluidSynth
 """
+import os
+
 from midi2audio import FluidSynth
+
+SOUND_FONT = "soundfont.sf2"
 
 def convert_midi_to_audio():
     """Convert the MIDI file to WAV format"""
     try:
         # Initialize FluidSynth
-        fs = FluidSynth()
+        # Without an explicit path, midi2audio looks in ~/.fluidsynth/ and ignores the local soundfont.sf2
+        fs = FluidSynth(SOUND_FONT) if os.path.exists(SOUND_FONT) else FluidSynth()
         
         # Convert MIDI to WAV
         print("Converting MIDI to audio...")
